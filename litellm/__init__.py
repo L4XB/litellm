@@ -48,7 +48,7 @@ from typing import (
 from collections.abc import Mapping
 from litellm.types.integrations.datadog import DatadogInitParams
 from litellm.types.integrations.newrelic import NewRelicInitParams
-from litellm.litellm_core_utils.core_helpers import drop_params_env_flag
+from litellm.litellm_core_utils.core_helpers import drop_params_env_flag, env_bool_flag
 from litellm.types.integrations.pointfive import PointFiveInitParams
 from litellm._logging import (
     set_verbose,
@@ -243,9 +243,9 @@ token: Optional[str] = (
 telemetry = True
 max_tokens: int = DEFAULT_MAX_TOKENS  # OpenAI Defaults
 drop_params = drop_params_env_flag(os.environ, verbose_logger)
-modify_params = bool(os.getenv("LITELLM_MODIFY_PARAMS", False))
-use_chat_completions_url_for_anthropic_messages: bool = bool(
-    os.getenv("LITELLM_USE_CHAT_COMPLETIONS_URL_FOR_ANTHROPIC_MESSAGES", False)
+modify_params = env_bool_flag(os.environ, "LITELLM_MODIFY_PARAMS", verbose_logger)
+use_chat_completions_url_for_anthropic_messages: bool = env_bool_flag(
+    os.environ, "LITELLM_USE_CHAT_COMPLETIONS_URL_FOR_ANTHROPIC_MESSAGES", verbose_logger
 )  # When True, routes OpenAI /v1/messages requests to chat/completions instead of the Responses API
 # When True, strip the OpenAI-flavored `usage.total_tokens` field that
 # LiteLLM injects into non-streaming /v1/messages responses, bringing the

@@ -7,6 +7,7 @@ import pytest
 from litellm.litellm_core_utils.core_helpers import (
     _FINISH_REASON_MAP,
     drop_params_env_flag,
+    env_bool_flag,
     drop_params_flag,
     get_or_create_metadata_bucket,
     map_finish_reason,
@@ -406,3 +407,37 @@ class TestIsExpectedClientError:
             category=RateLimitErrorCategory.VENDOR_RATE_LIMIT,
         )
         assert is_expected_client_error(vendor_limit) is False
+
+
+@pytest.mark.parametrize(
+    "configured, expected",
+    [
+        (None, False),
+        ("", False),
+        ("   ", False),
+        ("true", True),
+        ("True", True),
+        (" 1 ", True),
+        ("yes", True),
+        ("on", True),
+        ("false", False),
+        ("0", False),
+        (" False ", False),
+        ("no", False),
+        ("off", False),
+    ],
+)
+def test_env_bool_flag_reads_a_flag_without_a_warning(configured, expected, caplog):
+    environ = {} if configured is None else {"SOME_FLAG": configured}
+    with caplog.at_level(logging.WARNING, logger="env-flag-test"):
+        assert env_bool_flag(environ, "SOME_FLAG", logging.getLogger("env-flag-test")) is expected
+    assert caplog.text == ""
+
+
+@pytest.mark.parametrize("configured", ["ture", "enabled", "2", "none"])
+def test_env_bool_flag_turns_a_non_flag_value_off_with_a_warning(configured, caplog):
+    with caplog.at_level(logging.WARNING, logger="env-flag-test"):
+        assert env_bool_flag({"SOME_FLAG": configured}, "SOME_FLAG", logging.getLogger("env-flag-test")) is False
+    assert (
+        f"SOME_FLAG={configured!r} is not a flag value, treating it as off. Set it to true or false" in caplog.text
+    )

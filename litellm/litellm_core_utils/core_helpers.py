@@ -66,6 +66,23 @@ def drop_params_flag(value: object, source: str, logger: logging.Logger) -> bool
     return bool(normalized)
 
 
+def env_bool_flag(environ: Mapping[str, str], name: str, logger: logging.Logger) -> bool:
+    """An off-by-default boolean env flag.
+
+    `bool(os.getenv(NAME, False))` reads every non-empty value as on, so `NAME=false`
+    and `NAME=0` turn the flag on. An unrecognised value is off and is logged rather
+    than guessed, so a typo cannot silently enable a flag that rewrites requests.
+    """
+    configured: Final = environ.get(name, "").strip()
+    if configured == "":
+        return False
+    normalized: Final = normalize_drop_params(configured)
+    if normalized is None:
+        logger.warning("%s=%r is not a flag value, treating it as off. Set it to true or false", name, configured)
+        return False
+    return normalized
+
+
 DROP_PARAMS_ENV_VAR: Final = "LITELLM_DROP_PARAMS"
 
 
